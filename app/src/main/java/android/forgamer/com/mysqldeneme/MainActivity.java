@@ -1,5 +1,6 @@
 package android.forgamer.com.mysqldeneme;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -16,6 +17,8 @@ import android.view.MenuItem;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener
 {
+    private ProgressDialog pDialog;
+    JSO
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
