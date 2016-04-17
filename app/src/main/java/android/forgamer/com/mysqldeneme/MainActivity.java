@@ -1,24 +1,42 @@
 package android.forgamer.com.mysqldeneme;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.forgamer.com.mysqldeneme.Classes.Constants;
+import android.forgamer.com.mysqldeneme.Classes.JSONFunctions;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener
 {
-    private ProgressDialog pDialog;
-    JSO
+
+    ListView listDuyuru;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -29,15 +47,6 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -47,6 +56,9 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        listDuyuru = (ListView) findViewById(R.id.listView);
+        new getJSON().execute();
     }
 
     @Override
@@ -96,6 +108,7 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_camera)
         {
+            new getJSON().execute();
             // Handle the camera action
         } else if (id == R.id.nav_gallery)
         {
@@ -117,5 +130,95 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private class getJSON extends AsyncTask<Void, Void, ArrayList<HashMap<String, String>>>
+    {
+        @Override
+        protected ArrayList<HashMap<String, String>> doInBackground(Void... params)
+        {
+            ArrayList<HashMap<String, String>> arrayDuyurular = new ArrayList<>();
+            JSONObject json = JSONFunctions.getJSONfromURL(Constants.JSON_URL_ALL);
+            try
+            {
+                if (json.getInt("basarili") == 1)
+                {
+                    JSONArray duyurular = json.getJSONArray("duyurular");
+
+                    for (int i = 0; i < duyurular.length(); i++)
+                    {
+                        JSONObject duyuruJSON = duyurular.getJSONObject(i);
+                        HashMap<String, String> duyuru = new HashMap<>();
+                        duyuru.put("id", duyuruJSON.getString("id"));
+                        duyuru.put("mesaj", duyuruJSON.getString("mesaj"));
+                        duyuru.put("tarih", duyuruJSON.getString("tarih"));
+                        duyuru.put("yazar", duyuruJSON.getString("yazar"));
+                        arrayDuyurular.add(duyuru);
+                    }
+                }
+            } catch (Exception e)
+            {
+                Log.d("ForGamer", "doInBackground: " + e.getMessage());
+            }
+            return arrayDuyurular;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<HashMap<String, String>> duyurular)
+        {
+            adapterDuyuru adapter = new adapterDuyuru(MainActivity.this, R.layout.list_item_duyuru, duyurular);
+            listDuyuru.setAdapter(adapter);
+            super.onPostExecute(duyurular);
+        }
+    }
+
+    private class adapterDuyuru extends ArrayAdapter<HashMap<String, String>>
+    {
+        ArrayList<HashMap<String, String>> duyurular;
+        int resId;
+        Context context;
+
+        public adapterDuyuru(Context context, int resource, ArrayList<HashMap<String, String>> objects)
+        {
+            super(context, resource, objects);
+            duyurular = objects;
+            resId = resource;
+            this.context = context;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent)
+        {
+            View row = convertView;
+            DuyuruHolder holder = null;
+
+            if (row == null)
+            {
+                LayoutInflater inflater = ((Activity) context).getLayoutInflater();
+                row = inflater.inflate(resId, parent, false);
+
+                holder = new DuyuruHolder();
+                holder.tvMesaj = (TextView) row.findViewById(R.id.tvMesaj);
+                holder.tvTarih = (TextView) row.findViewById(R.id.tvTarih);
+                holder.tvYazar = (TextView) row.findViewById(R.id.tvYazar);
+
+                row.setTag(holder);
+            } else
+            {
+                holder = (DuyuruHolder) row.getTag();
+            }
+            holder.tvMesaj.setText(duyurular.get(position).get("mesaj"));
+            holder.tvYazar.setText(duyurular.get(position).get("yazar"));
+            holder.tvTarih.setText(duyurular.get(position).get("tarih"));
+
+            return row;
+        }
+
+        class DuyuruHolder
+        {
+            TextView tvMesaj;
+            TextView tvTarih;
+            TextView tvYazar;
+        }
     }
 }
